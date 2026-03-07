@@ -1,0 +1,456 @@
+# SINGLE WORKFLOW for merge + all deploys
+#
+# Why one file instead of separate workflows per deploy type:
+#   - The merge into main MUST happen first and only once. Separate workflows
+#     would each need the merge step, creating a race condition (two workflows
+#     trying to merge the same branch simultaneously).
+#   - Splitting would require a shared merge workflow + workflow_run triggers,
+#     adding complexity for no benefit.
+#   - Each deploy step is already independent and conditional (only runs when
+#     its files changed), so it behaves like separate deploys within one pipeline.
+#   - Adding a new GAS project = adding one more conditional step. Simple.
+#
+# Flow:
+#   1. Push to claude/* branch triggers this workflow
+#   1a. Guard: detect inherited branches via dual-source commit-SHA tracking,
+#       commit-timestamp-vs-repo-creation check, IS_TEMPLATE_REPO mismatch,
+#       and already-merged check — delete and skip
+#   2. Merge into main (once)
+#   3. Check what changed (git diff)
+#   4. Deploy GAS projects — only if their <page-name>.gs was modified
+#   5. Delete the claude branch
+#   6. Deploy GitHub Pages — only if live-site-pages/ files were modified
+#   7. After merging, sweep and delete any other stale claude/* branches
+#      that are already merged (self-healing cleanup)
+#   8. Workflow only triggers on claude/* pushes (not main) — prevents
+#      template copies from firing the workflow on their initial commit.
+#      workflow_dispatch is available for manual re-deploys
+#   9. ALL jobs (except check-template) require initialization OR being
+#      the template repo — on an uninitialized copy, only check-template
+#      runs; everything else is skipped. The template repo itself is
+#      always allowed through (is-template = true)
+#  10. SHA update commits use [skip ci] to prevent cascading workflow runs
+#
+# DO NOT manually add 'main' to the push trigger on the template repo. It is
+# deliberately excluded so "Use this template" copies produce zero workflow
+# activity. The init script (scripts/init-repo.sh) adds 'main' back during
+# initialization, enabling direct-to-main auto-deploys on initialized forks.
+#
+# DO NOT use a repo-age guard (e.g. "skip if repo < 10 min old") to suppress
+# template creation deploys. It's a timing-based band-aid that breaks if the
+# workflow runs slowly or if the user acts quickly. The initialization-state
+# check (IS_TEMPLATE_REPO = No) is deterministic and correct by design.
+#
+# HOW TO ADD A NEW GAS PROJECT:
+#
+#   Prerequisites — collect these from the new Apps Script project:
+#     - DEPLOYMENT_ID    : Web app deployment ID (from Deploy → Manage deployments)
+#                          This is also the long string in the /exec URL
+#     - SPREADSHEET_ID   : Google Sheets ID (from the sheet URL between /d/ and /edit)
+#     - SHEET_NAME       : Name of the sheet tab to read/write (e.g. "Live_Sheet")
+#     - GITHUB_TOKEN     : Set in Apps Script: Project Settings → Script Properties
+#                          Key: GITHUB_TOKEN  Value: github_pat_... token
+#     - SOUND_FILE_ID    : Google Drive file ID for the GAS "Test Sound" button (optional)
+#     - EMBED_PAGE_URL   : The GitHub Pages URL where this GAS app is iframed (optional)
+#     - SPLASH_LOGO_URL  : Logo shown on the blue "Code Ready" splash screen (optional)
+#
+#   Steps:
+#     1. Create a folder in googleAppsScripts/ (e.g. "My New Project")
+#     2. Copy <page-name>.gs from an existing project as a template, renaming
+#        it to match the HTML page (e.g. dashboard.gs for dashboard.html)
+#     3. Copy <page-name>.config.json and rename to match (e.g. dashboard.config.json).
+#        Fill in project-unique values (TITLE, DEPLOYMENT_ID, SPREADSHEET_ID, etc.)
+#     4. Update the PROJECT CONFIG section at the top of <page-name>.gs:
+#          var VERSION        = "01.00g";
+#          var TITLE          = "My New Project";           // ← from config.json
+#          var SPREADSHEET_ID = "your-spreadsheet-id";      // ← from config.json
+#          var SHEET_NAME     = "Live_Sheet";               // ← from config.json
+#          var GITHUB_OWNER   = "<your-github-org>";
+#          var GITHUB_REPO    = "<your-repo-name>";
+#          var GITHUB_BRANCH  = "main";
+#          var FILE_PATH      = "googleAppsScripts/My New Project/my-new-project.gs";
+#          var DEPLOYMENT_ID  = "your-deployment-id";       // ← from config.json
+#          var SOUND_FILE_ID  = "your-drive-file-id";       // ← from config.json
+#          var EMBED_PAGE_URL = "https://<your-org>.github.io/<your-repo>/your-page.html";
+#          var SPLASH_LOGO_URL = "https://your-logo-url";
+#     5. Bootstrap: manually copy-paste <page-name>.gs into the Apps Script editor and save
+#        (first deploy must be manual — doPost can't deploy itself before it exists)
+#     6. Add a new step in this workflow BEFORE "Delete branch", using this template:
+#
+#        - name: Deploy My New Project
+#          run: |
+#            PRE=${{ steps.merge.outputs.pre_merge_sha }}
+#            git diff --name-only "$PRE" HEAD | grep -q "googleAppsScripts/My New Project/my-new-project.gs" && \
+#            curl -L -X POST \
+#              "https://script.google.com/macros/s/DEPLOYMENT_ID_HERE/exec" \
+#              -d "action=deploy" \
+#              --max-time 120 || true
+#
+#     7. Replace DEPLOYMENT_ID_HERE with the project's deployment ID
+#     8. That's it — the step only runs when that project's <page-name>.gs changes
+name: Auto-merge Claude branches
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  auto-merge:
+    if: >-
+      github.ref != 'refs/heads/main' &&
+      (needs.check-template.outputs.is-initialized == 'true' ||
+       needs.check-template.outputs.is-template == 'true')
+    needs: [check-template]
+    runs-on: ubuntu-latest
+    outputs:
+      pages-changed: ${{ steps.check-changes.outputs.pages-changed }}
+    steps:
+      # GITHUB_TOKEN cannot push changes to .github/workflows/ files — GitHub
+      # requires the 'workflows' scope which only PATs have. If the repo has a
+      # PAT stored as WORKFLOW_PAT, use it; otherwise fall back to GITHUB_TOKEN
+      # (which works for all pushes except workflow file changes).
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.WORKFLOW_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Guard against stale inherited branches
+        id: guard
+        run: |
+          echo "══════════════"
+          echo "GUARD: Starting inherited branch detection"
+          echo "══════════════"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Run number: ${{ github.run_number }}"
+
+          # ── Check 0a: Commit SHA already processed ──
+          # The file .github/last-processed-commit.sha stores the SHA of the
+          # last commit that was successfully merged. On fork/import, the
+          # inherited claude/* branches carry the exact same commit SHAs from
+          # the template repo. If the branch tip matches the stored SHA, it's
+          # an inherited branch replaying an already-processed commit.
+          #
+          # We check the SHA file from TWO sources:
+          #   1. The checked-out branch (the push being processed)
+          #   2. origin/main (which has the most recently updated SHA)
+          # On a fork/copy, the branch carries the template's SHA file, but
+          # origin/main may have a more recent SHA from a prior workflow run.
+          # Matching EITHER means this commit was already processed.
+          INCOMING_SHA="${{ github.sha }}"
+          echo "GUARD: Incoming SHA = $INCOMING_SHA"
+
+          # Source 1: SHA file from the checked-out branch
+          BRANCH_SHA=""
+          if [ -f ".github/last-processed-commit.sha" ]; then
+            BRANCH_SHA=$(cat .github/last-processed-commit.sha | tr -d '[:space:]')
+          fi
+          echo "GUARD Check 0a-1: Branch .sha file = '${BRANCH_SHA:-<empty>}'"
+          if [ -n "$BRANCH_SHA" ] && [ "$BRANCH_SHA" = "$INCOMING_SHA" ]; then
+            echo "::notice::Inherited branch detected — commit SHA $INCOMING_SHA matches last-processed-commit.sha (from branch)"
+            echo "::notice::Deleting inherited branch ${{ github.ref_name }}"
+            git push origin --delete ${{ github.ref_name }} || true
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # ── Fetch origin/main with retry ──
+          MAIN_AVAILABLE=false
+          for attempt in 1 2 3; do
+            if git fetch origin main 2>/dev/null; then
+              MAIN_AVAILABLE=true
+              break
+            fi
+            echo "::warning::Failed to fetch origin/main (attempt $attempt/3)"
+            sleep 3
+          done
+          echo "GUARD: origin/main fetch = $MAIN_AVAILABLE"
+
+          # ── Check 0: origin/main refresh status ──
+          # actions/checkout with fetch-depth:0 already fetched all branches
+          # including main. The explicit fetch above is just a refresh. If it
+          # failed, origin/main from the initial checkout is still available.
+          if [ "$MAIN_AVAILABLE" = false ]; then
+            echo "::warning::Could not refresh origin/main — using checkout version for remaining checks"
+          fi
+
+          # Source 2: SHA file from origin/main (freshly fetched)
+          MAIN_SHA=""
+          MAIN_SHA=$(git show origin/main:.github/last-processed-commit.sha 2>/dev/null | tr -d '[:space:]' || echo "")
+          echo "GUARD Check 0a-2: Main .sha file = '${MAIN_SHA:-<empty>}'"
+          if [ -n "$MAIN_SHA" ] && [ "$MAIN_SHA" = "$INCOMING_SHA" ]; then
+            echo "::notice::Inherited branch detected — commit SHA $INCOMING_SHA matches last-processed-commit.sha (from origin/main)"
+            echo "::notice::Deleting inherited branch ${{ github.ref_name }}"
+            git push origin --delete ${{ github.ref_name }} || true
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # ── Check 1: Already merged ──
+          if git merge-base --is-ancestor ${{ github.sha }} origin/main; then
+            echo "::notice::Branch already merged into main — cleaning up"
+            git push origin --delete ${{ github.ref_name }} || true
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "GUARD Check 1: Branch is NOT ancestor of origin/main — continuing"
+
+          # ── Check 2: Commit predates repo creation ──
+          CREATED_AT=$(curl -sS --retry 3 --retry-delay 2 --retry-all-errors \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "${{ github.api_url }}/repos/${{ github.repository }}" | jq -r '.created_at' || echo "")
+          echo "GUARD Check 2: API created_at = '${CREATED_AT:-<empty>}'"
+
+          if [ -n "$CREATED_AT" ] && [ "$CREATED_AT" != "null" ]; then
+            REPO_CREATED_EPOCH=$(date -d "$CREATED_AT" +%s 2>/dev/null || echo "0")
+            COMMIT_AUTHOR_DATE=$(git log -1 --format='%aI' ${{ github.sha }})
+            COMMIT_EPOCH=$(date -d "$COMMIT_AUTHOR_DATE" +%s 2>/dev/null || echo "0")
+
+            echo "GUARD Check 2: Repo created epoch = $REPO_CREATED_EPOCH"
+            echo "GUARD Check 2: Commit author date = $COMMIT_AUTHOR_DATE (epoch: $COMMIT_EPOCH)"
+
+            # Timestamp check: commit older than repo (minus 5 min grace)?
+            GRACE=300
+            REPO_CREATED_WITH_GRACE=$((REPO_CREATED_EPOCH - GRACE))
+            if [ "$COMMIT_EPOCH" -gt 0 ] && [ "$COMMIT_EPOCH" -lt "$REPO_CREATED_WITH_GRACE" ]; then
+              echo "::notice::Inherited branch detected — commit authored $(date -d "@$COMMIT_EPOCH" -u '+%Y-%m-%dT%H:%M:%SZ') but repo created $(date -d "@$REPO_CREATED_EPOCH" -u '+%Y-%m-%dT%H:%M:%SZ')"
+              git push origin --delete ${{ github.ref_name }} || true
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            echo "GUARD Check 2: Commit not older than repo — continuing"
+          else
+            echo "::warning::Could not fetch repo creation date — skipping timestamp check (other guards still apply)"
+          fi
+
+          # ── Check 3: IS_TEMPLATE_REPO mismatch (defense in depth) ──
+          TEMPLATE_VALUE_MAIN=$(git show origin/main:CLAUDE.md 2>/dev/null | \
+            grep -oP '^\| `IS_TEMPLATE_REPO` \| \K[^|]+' | \
+            sed 's/[[:space:]]*$//' | tr -d '\r' || echo "")
+          TEMPLATE_VALUE_BRANCH=$(grep -oP '^\| `IS_TEMPLATE_REPO` \| \K[^|]+' CLAUDE.md | \
+            sed 's/[[:space:]]*$//' | tr -d '\r' || echo "")
+          REPO_NAME="${{ github.event.repository.name }}"
+          echo "GUARD Check 3: IS_TEMPLATE_REPO from main = '${TEMPLATE_VALUE_MAIN:-<empty>}'"
+          echo "GUARD Check 3: IS_TEMPLATE_REPO from branch = '${TEMPLATE_VALUE_BRANCH:-<empty>}'"
+          echo "GUARD Check 3: Actual repo name = '$REPO_NAME'"
+
+          # Case A: main says "No" (initialized) but branch still has template name
+          if [ "$TEMPLATE_VALUE_MAIN" = "No" ] && \
+             [ -n "$TEMPLATE_VALUE_BRANCH" ] && \
+             [ "$TEMPLATE_VALUE_BRANCH" != "No" ] && \
+             [ "$TEMPLATE_VALUE_BRANCH" != "$REPO_NAME" ]; then
+            echo "::notice::Stale branch from pre-initialization detected (main: No, branch: $TEMPLATE_VALUE_BRANCH)"
+            git push origin --delete ${{ github.ref_name }} || true
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Case B: Branch's IS_TEMPLATE_REPO doesn't match this repo name
+          if [ -n "$TEMPLATE_VALUE_BRANCH" ] && \
+             [ "$TEMPLATE_VALUE_BRANCH" != "No" ] && \
+             [ "$TEMPLATE_VALUE_BRANCH" != "$REPO_NAME" ]; then
+            echo "::notice::Stale branch from template repo — IS_TEMPLATE_REPO mismatch ($TEMPLATE_VALUE_BRANCH != $REPO_NAME)"
+            git push origin --delete ${{ github.ref_name }} || true
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "GUARD: All checks passed — branch is legitimate"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Merge into main and update SHA tracker
+        if: steps.guard.outputs.skip != 'true'
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout main
+          echo "pre_merge_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+          # Merge the claude branch into main
+          git merge --ff-only ${{ github.ref_name }} || \
+            git merge --no-edit -X theirs ${{ github.ref_name }}
+
+          # Update the SHA tracker in the SAME push as the merge.
+          # This eliminates the race condition where an import/fork copies the
+          # repo between the merge push and the SHA update push, getting an
+          # inconsistent state where the branch exists but the SHA file is stale.
+          MERGE_SHA=$(git rev-parse HEAD)
+          echo "$MERGE_SHA" > .github/last-processed-commit.sha
+          git add .github/last-processed-commit.sha
+          git commit -m "Update last-processed-commit.sha to ${MERGE_SHA:0:7} [skip ci]" || true
+
+          # Single push — merge + SHA update land atomically
+          git push origin main
+
+      - name: Check what changed
+        if: steps.guard.outputs.skip != 'true'
+        id: check-changes
+        run: |
+          PRE=${{ steps.merge.outputs.pre_merge_sha }}
+          PAGES_CHANGED=false
+          # Deploy if live-site-pages/ files changed
+          if git diff --name-only "$PRE" HEAD | grep -q "^live-site-pages/"; then
+            PAGES_CHANGED=true
+          fi
+          # Deploy on initialization (IS_TEMPLATE_REPO changed to No)
+          if git diff "$PRE" HEAD -- CLAUDE.md | grep -q '^+| `IS_TEMPLATE_REPO` | No |'; then
+            PAGES_CHANGED=true
+          fi
+          echo "pages-changed=$PAGES_CHANGED" >> "$GITHUB_OUTPUT"
+
+      # ── GAS DEPLOY STEPS ──
+      # Add one step per GAS project here, BEFORE "Delete branch".
+      # Each step only fires when its .gs file changed in the merge.
+      #
+      # Template (uncomment and fill in):
+      #
+      # - name: Deploy <Your Project Name>
+      #   run: |
+      #     PRE=${{ steps.merge.outputs.pre_merge_sha }}
+      #     git diff --name-only "$PRE" HEAD | grep -q "googleAppsScripts/<Your Project Name>/<CodeFile>.gs" && \
+      #     curl -L -X POST \
+      #       "https://script.google.com/macros/s/<YOUR_DEPLOYMENT_ID>/exec" \
+      #       -d "action=deploy" \
+      #       --max-time 120 || true
+      # ──────────────
+
+      - name: Deploy Testation7
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          PRE=${{ steps.merge.outputs.pre_merge_sha }}
+          git diff --name-only "$PRE" HEAD | grep -q "googleAppsScripts/Testation7/testation7.gs" && \
+          curl -L -X POST \
+            "https://script.google.com/macros/s/AKfycby4HQJQmuZr6Mt3wqrpY_2g9_B6QaF_c1tFbbFX5n9SIBmooPHrWWPp4MFekQ2iEtj1/exec" \
+            -d "action=deploy" \
+            --max-time 120 || true
+
+      - name: Deploy Testation8
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          PRE=${{ steps.merge.outputs.pre_merge_sha }}
+          git diff --name-only "$PRE" HEAD | grep -q "googleAppsScripts/Testation8/testation8.gs" && \
+          curl -L -X POST \
+            "https://script.google.com/macros/s/AKfycbyYVpND1UzIP-8rI_zDasIXQ9QqlTS2Y8RseBs55KZQOuYn9R0l5F1FxCmP4h9akQxV/exec" \
+            -d "action=deploy" \
+            --max-time 120 || true
+
+      - name: Delete branch
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          git push origin --delete ${{ github.ref_name }} || echo "Branch already deleted"
+
+      - name: Sweep stale claude branches
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          # After merging, sweep for any other claude/* branches already
+          # merged into main. Catches branches that survived due to workflow
+          # failures, race conditions, or re-pushes after deletion.
+          git fetch origin main
+          DELETED=0
+          for ref in $(git branch -r --list 'origin/claude/*' 2>/dev/null); do
+            branch_name="${ref#origin/}"
+            if git merge-base --is-ancestor "$ref" origin/main 2>/dev/null; then
+              echo "Deleting merged branch: $branch_name"
+              git push origin --delete "$branch_name" || true
+              DELETED=$((DELETED + 1))
+            fi
+          done
+          if [ "$DELETED" -gt 0 ]; then
+            echo "::notice::Cleaned up $DELETED stale claude/* branch(es)"
+          else
+            echo "No stale claude/* branches found"
+          fi
+
+  check-template:
+    runs-on: ubuntu-latest
+    outputs:
+      is-template: ${{ steps.check.outputs.is-template }}
+      is-initialized: ${{ steps.check.outputs.is-initialized }}
+      template-deploy: ${{ steps.check.outputs.template-deploy }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: CLAUDE.md
+          sparse-checkout-cone-mode: false
+      - name: Check IS_TEMPLATE_REPO in CLAUDE.md
+        id: check
+        run: |
+          TEMPLATE_VALUE=$(grep -oP '^\| `IS_TEMPLATE_REPO` \| \K[^|]+' CLAUDE.md | sed 's/[[:space:]]*$//' | tr -d '\r' || echo "")
+          REPO_NAME="${{ github.event.repository.name }}"
+          if [ -n "$TEMPLATE_VALUE" ] && [ "$TEMPLATE_VALUE" != "No" ] && [ "$TEMPLATE_VALUE" = "$REPO_NAME" ]; then
+            echo "is-template=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is-template=false" >> "$GITHUB_OUTPUT"
+          fi
+          # Initialization check: IS_TEMPLATE_REPO = "No" means the repo has
+          # been initialized via `initialize`. Uninitialized forks still have the
+          # template repo name here. This gates direct-to-main deploys — only
+          # initialized repos should auto-deploy on main pushes. The initialization
+          # commit itself deploys via the auto-merge success path (pages-changed),
+          # not the skipped path, so this doesn't block first deploy.
+          if [ "$TEMPLATE_VALUE" = "No" ]; then
+            echo "is-initialized=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is-initialized=false" >> "$GITHUB_OUTPUT"
+          fi
+          # TEMPLATE_DEPLOY toggle: when "On", allows GitHub Pages deployment
+          # even on the template repo. Has no effect on forks.
+          TEMPLATE_DEPLOY=$(grep -oP '^\| `TEMPLATE_DEPLOY` \| \K[^|]+' CLAUDE.md | sed 's/[[:space:]]*$//' | tr -d '\r' || echo "Off")
+          echo "template-deploy=$TEMPLATE_DEPLOY" >> "$GITHUB_OUTPUT"
+
+  # Deploy condition explained:
+  #   - is-template + template-deploy: skip deploy on the template repo UNLESS
+  #     TEMPLATE_DEPLOY is "On" in CLAUDE.md (allows seeing the live site on
+  #     the template). When TEMPLATE_DEPLOY is "On", the template repo deploys
+  #     on every auto-merge success (bypasses pages-changed gate)
+  #   - auto-merge skipped + is-initialized: handles workflow_dispatch on
+  #     initialized forks (manual re-deploy). Since main is not in the push
+  #     trigger, this path only fires via workflow_dispatch
+  #   - auto-merge success + pages-changed: deploy if live-site-pages/ files
+  #     changed (includes initialization commit which sets IS_TEMPLATE_REPO = No)
+  #   - auto-merge success + template-deploy On: always deploy on template repo
+  #     when toggle is enabled (bypasses pages-changed requirement)
+  deploy:
+    if: >-
+      (needs.check-template.outputs.is-template != 'true' ||
+       needs.check-template.outputs.template-deploy == 'On') &&
+      always() &&
+      ((needs.auto-merge.result == 'skipped' && needs.check-template.outputs.is-initialized == 'true') ||
+       (needs.auto-merge.result == 'success' && needs.auto-merge.outputs.pages-changed == 'true') ||
+       (needs.auto-merge.result == 'success' && needs.check-template.outputs.template-deploy == 'On'))
+    needs: [auto-merge, check-template]
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './live-site-pages'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+# Developed by: ShadowAISolutions
+
