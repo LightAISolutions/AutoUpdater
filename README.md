@@ -2,7 +2,7 @@
 
 A GitHub Pages deployment framework with automatic version polling, auto-refresh, and Google Apps Script (GAS) embedding support.
 
-Last updated: `2026-03-07 03:24:17 PM EST` · Repo version: `v01.00r`
+Last updated: `2026-03-07 04:17:16 PM EST` · Repo version: `v01.01r`
 
 **Live site:** [LightAISolutions.github.io/AutoUpdater](https://LightAISolutions.github.io/AutoUpdater)
 
@@ -99,10 +99,12 @@ AutoUpdater/
 │   │   ├── gas-project-creatorhtml.version.txt
 │   │   └── testation7html.version.txt
 │   │   ├── testation8html.version.txt     # Version file for testation8 page auto-refresh
+│   │   ├── Researchhtml.version.txt     # Version file for Research page auto-refresh
 │   ├── gs-versions/             # GAS version files for GAS version pill polling
 │   │   ├── indexgs.version.txt
 │   │   └── testation7gs.version.txt
 │   │   ├── testation8gs.version.txt       # Deployed GAS version for pill polling
+│   │   ├── Researchgs.version.txt       # Deployed GAS version for pill polling
 │   ├── html-changelogs/         # HTML changelogs (source of truth + deployed)
 │   │   ├── indexhtml.changelog.md                 # Homepage changelog
 │   │   ├── indexhtml.changelog-archive.md         # Older sections (rotated)
@@ -110,6 +112,8 @@ AutoUpdater/
 │   │   ├── gas-project-creatorhtml.changelog-archive.md  # Older sections (rotated)
 │   │   ├── testation7html.changelog.md            # Testation7 changelog
 │   │   ├── testation8html.changelog.md           # HTML changelog for popup
+│   │   ├── Researchhtml.changelog.md           # HTML changelog for popup
+│   │   ├── Researchhtml.changelog-archive.md   # Older changelog sections (rotated)
 │   │   ├── testation8html.changelog-archive.md   # Older changelog sections (rotated)
 │   │   └── testation7html.changelog-archive.md    # Older sections (rotated)
 │   ├── gs-changelogs/           # GAS changelogs (source of truth + deployed)
@@ -117,10 +121,13 @@ AutoUpdater/
 │   │   ├── indexgs.changelog-archive.md           # Older sections (rotated)
 │   │   ├── testation7gs.changelog.md              # Testation7 GAS changelog
 │   │   ├── testation8gs.changelog.md             # GAS changelog for popup
+│   │   ├── Researchgs.changelog.md             # GAS changelog for popup
+│   │   ├── Researchgs.changelog-archive.md     # Older changelog sections (rotated)
 │   │   ├── testation8gs.changelog-archive.md     # Older changelog sections (rotated)
 │   │   └── testation7gs.changelog-archive.md      # Older sections (rotated)
 │   ├── testation7.html           # Testation7 GAS embedding page
 │   ├── testation8.html                # Testation8 GAS embedding page
+│   ├── Research.html                # Research GAS embedding page
 │   └── sounds/                 # Audio feedback files
 ├── live-site-templates/        # Templates for new pages
 │   ├── HtmlAndGasTemplateAutoUpdate.html     # Universal HTML page template (GAS features auto-activate when gs.version.txt exists)
@@ -132,9 +139,12 @@ AutoUpdater/
 │   ├── Testation7/              # GAS for live-site-pages/testation7.html
 │   │   ├── testation7.gs        # Self-updating GAS web app
 │   │   └── testation7.config.json  # Project config (source of truth)
-│   └── Testation8/              # GAS for live-site-pages/testation8.html
-│       ├── testation8.gs        # Self-updating GAS web app
-│       └── testation8.config.json  # Project config (source of truth)
+│   ├── Testation8/              # GAS for live-site-pages/testation8.html
+│   │   ├── testation8.gs        # Self-updating GAS web app
+│   │   └── testation8.config.json  # Project config (source of truth)
+│   └── Research/              # GAS for live-site-pages/Research.html
+│       ├── Research.gs        # Self-updating GAS web app
+│       └── Research.config.json  # Project config (source of truth)
 ├── .claude/
 │   ├── rules/                  # Always-loaded + path-scoped rules
 │   │   ├── behavioral-rules.md        # Always loaded — execution style, pushback, etc.
