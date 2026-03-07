@@ -1,11 +1,11 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "htmltemplateautoupdate"
+title: "AutoUpdater"
 abstract: "A GitHub Pages deployment framework with automatic version polling, auto-refresh, and Google Apps Script embedding support."
 authors:
-  - name: "ShadowAISolutions"
+  - name: "LightAISolutions"
 type: software
 license: "All Rights Reserved"
-repository-code: "https://github.com/ShadowAISolutions/htmltemplateautoupdate"
-url: "https://ShadowAISolutions.github.io/htmltemplateautoupdate"
-# Developed by: ShadowAISolutions
+repository-code: "https://github.com/LightAISolutions/AutoUpdater"
+url: "https://LightAISolutions.github.io/AutoUpdater"
+# Developed by: LightAISolutions

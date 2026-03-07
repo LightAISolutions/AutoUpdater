@@ -41,4 +41,4 @@ This security policy covers:
 - Google Apps Script code (`.gs` files)
 - CI/CD workflows (`.github/workflows/`)
 
-Developed by: ShadowAISolutions
+Developed by: LightAISolutions

@@ -68,4 +68,4 @@ Ideas and optimizations to explore — no commitment, investigated when time all
 
 **Current status:** Not needed. Revisit when adding features that introduce new per-page configuration or cross-page shared settings.
 
-Developed by: ShadowAISolutions
+Developed by: LightAISolutions

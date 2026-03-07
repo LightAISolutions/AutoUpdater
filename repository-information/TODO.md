@@ -8,4 +8,4 @@ Actionable items that are planned to be done.
 - Get mustard
 - Get pickles
 
-Developed by: ShadowAISolutions
+Developed by: LightAISolutions

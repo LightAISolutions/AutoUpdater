@@ -4,10 +4,10 @@
 
 | Page | File | Version | Live URL | Status |
 |------|------|---------|----------|--------|
-| Landing Page | `live-site-pages/index.html` | v01.00w | *(deploy to activate)* | Active |
-| GAS Project Creator | `live-site-pages/gas-project-creator.html` | v01.00w | *(deploy to activate)* | Active |
-| Testation7 | `live-site-pages/testation7.html` | v01.00w | *(deploy to activate)* | Active |
-| Testation8 | `live-site-pages/testation8.html` | v01.00w | *(deploy to activate)* | Active |
+| Landing Page | `live-site-pages/index.html` | v01.00w | [View](https://LightAISolutions.github.io/AutoUpdater/) | Active |
+| GAS Project Creator | `live-site-pages/gas-project-creator.html` | v01.00w | [View](https://LightAISolutions.github.io/AutoUpdater/) | Active |
+| Testation7 | `live-site-pages/testation7.html` | v01.00w | [View](https://LightAISolutions.github.io/AutoUpdater/) | Active |
+| Testation8 | `live-site-pages/testation8.html` | v01.00w | [View](https://LightAISolutions.github.io/AutoUpdater/) | Active |
 
 
 ## GAS Projects
@@ -25,4 +25,4 @@
 |----------|------|------------------|
 | Universal Template | `live-site-templates/HtmlAndGasTemplateAutoUpdate.html` | v01.00w |
 
-Developed by: ShadowAISolutions
+Developed by: LightAISolutions

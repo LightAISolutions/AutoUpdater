@@ -141,4 +141,4 @@ This error means the Apps Script API is not enabled in the GCP project associate
 3. APIs & Services → Library → search "Apps Script API" → **Enable**
 4. If the project number doesn't match any project you own, your script is using a default GCP project that you can't access — follow the "cannot switch" fix above to assign your own GCP project first
 
-Developed by: ShadowAISolutions
+Developed by: LightAISolutions

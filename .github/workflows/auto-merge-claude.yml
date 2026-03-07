@@ -94,6 +94,7 @@ on:
   push:
     branches:
       - 'claude/**'
+      - 'main'
   workflow_dispatch:
 
 permissions:
@@ -452,5 +453,5 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-# Developed by: ShadowAISolutions
+# Developed by: LightAISolutions
 

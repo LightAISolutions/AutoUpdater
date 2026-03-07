@@ -35,4 +35,4 @@ This Code of Conduct applies within all project spaces and when an individual is
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by opening an issue or contacting the project maintainers directly.
 
-Developed by: ShadowAISolutions
+Developed by: LightAISolutions
