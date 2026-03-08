@@ -3,9 +3,17 @@
 All notable user-facing changes to this script are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Older sections are rotated to [Sinexcel_Researchgs.changelog-archive.md](Sinexcel_Researchgs.changelog-archive.md) when this file exceeds 50 version sections.
 
-`Sections: 4/50`
+`Sections: 5/50`
 
 ## [Unreleased]
+
+## [01.05g] — 2026-03-07 11:05:36 PM EST — v01.08r
+
+### Added
+- Oracle news scraper button — fetches DatacenterDynamics.com news pages and surfaces all Oracle-related articles with clickable links
+
+### Changed
+- ABB scraper generalized — `scrapeABBNews()` replaced by `scrapeKeyword(keyword)`, enabling any keyword to be searched from the same backend function
 
 ## [01.04g] — 2026-03-07 10:56:54 PM EST — v01.07r
 

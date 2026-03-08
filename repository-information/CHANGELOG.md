@@ -3,9 +3,23 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), with project-specific versioning (`w` = website, `g` = Google Apps Script, `r` = repository). Older sections are rotated to [CHANGELOG-archive.md](CHANGELOG-archive.md) when this file exceeds 100 version sections.
 
-`Sections: 7/100`
+`Sections: 8/100`
 
 ## [Unreleased]
+
+## [v01.08r] — 2026-03-07 11:05:36 PM EST
+
+### Added
+- Oracle news scraper button in Sinexcel_Research GAS app — scrapes DatacenterDynamics.com and displays all Oracle-related articles with links
+
+### Changed
+- ABB scraper generalized — `scrapeABBNews()` refactored into `scrapeKeyword(keyword)`, a single backend function supporting any search keyword
+
+#### `Sinexcel_Research.gs` — 01.05g
+##### Added
+- Oracle news scraper button — fetches DatacenterDynamics.com news pages and surfaces all Oracle-related articles with clickable links
+##### Changed
+- ABB scraper generalized — `scrapeABBNews()` replaced by `scrapeKeyword(keyword)`, enabling any keyword to be searched from the same backend function
 
 ## [v01.07r] — 2026-03-07 10:56:54 PM EST
 

@@ -1,4 +1,4 @@
-var VERSION = "01.04g";
+var VERSION = "01.05g";
 var TITLE = "Database";
 var GITHUB_OWNER  = "LightAISolutions";
 var GITHUB_REPO   = "AutoUpdater";
@@ -28,9 +28,9 @@ function getSheetTableData() {
   return { headers: headers, rows: rows };
 }
 
-function scrapeABBNews() {
+function scrapeKeyword(keyword) {
   var BASE = "https://www.datacenterdynamics.com";
-  var KEYWORD_RE = /\bABB\b/;
+  var KEYWORD_RE = new RegExp('\\b' + keyword + '\\b', 'i');
   var articles = [];
   var pagesChecked = 0;
 
@@ -72,17 +72,17 @@ function scrapeABBNews() {
         var context  = html.substring(ctxStart, ctxEnd);
         var plain    = context.replace(/<[^>]+>/g, " ").replace(/&amp;/g,"&").replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g, " ").trim();
 
-        // ABB match: slug contains "abb" as a word, or plain text contains "ABB"
-        var slugMatch = /\babb\b/i.test(slug.replace(/-/g, " "));
+        // Keyword match: slug or plain text contains keyword as a whole word
+        var slugMatch = new RegExp('\\b' + keyword + '\\b', 'i').test(slug.replace(/-/g, " "));
         var textMatch = KEYWORD_RE.test(plain);
 
         if (!slugMatch && !textMatch) continue;
 
-        // Extract best title from plain text — prefer a sentence that contains ABB
+        // Extract best title — prefer a sentence containing the keyword
         var title = "";
-        var abbSentence = plain.match(/([A-Z][^.!?\n]{10,180}(?:ABB)[^.!?\n]{0,120})/);
-        if (abbSentence) {
-          title = abbSentence[1].trim();
+        var kwSentence = plain.match(new RegExp('([A-Z][^.!?\\n]{10,180}(?:' + keyword + ')[^.!?\\n]{0,120})', 'i'));
+        if (kwSentence) {
+          title = kwSentence[1].trim();
         } else {
           // Fallback: humanise slug
           title = slug.replace(/-/g, " ").replace(/\b\w/g, function(c) { return c.toUpperCase(); });
@@ -93,13 +93,13 @@ function scrapeABBNews() {
       }
 
     } catch (e) {
-      Logger.log("scrapeABBNews page " + pi + " error: " + e.message);
+      Logger.log("scrapeKeyword(" + keyword + ") page " + pi + " error: " + e.message);
     }
   }
 
   return {
     articles: articles,
-    keyword: "ABB",
+    keyword: keyword,
     source: BASE + "/en/news/",
     pagesChecked: pagesChecked,
     timestamp: Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd HH:mm z")
@@ -157,15 +157,20 @@ function doGet() {
                   '<div style="font-size:12px;color:#64748b;">DCD News Monitor</div>' +
                 '</div>' +
               '</div>' +
-              '<button id="scrape-btn" onclick="runScrape()" style="display:inline-flex;align-items:center;gap:8px;background:#0070f3;color:#fff;border:none;border-radius:7px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.2px;">' +
-                '&#128240; Scrape ABB News — DatacenterDynamics.com' +
-              '</button>' +
+              '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+                '<button id="btn-ABB" onclick="runScrape(\'ABB\')" style="display:inline-flex;align-items:center;gap:8px;background:#0070f3;color:#fff;border:none;border-radius:7px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.2px;">' +
+                  '&#128240; Scrape ABB News — DatacenterDynamics.com' +
+                '</button>' +
+                '<button id="btn-Oracle" onclick="runScrape(\'Oracle\')" style="display:inline-flex;align-items:center;gap:8px;background:#e65c00;color:#fff;border:none;border-radius:7px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.2px;">' +
+                  '&#128240; Scrape Oracle News — DatacenterDynamics.com' +
+                '</button>' +
+              '</div>' +
               '<div id="status" style="margin-top:14px;font-size:13px;color:#64748b;min-height:18px;"></div>' +
               '<div id="results" style="margin-top:12px;"></div>' +
             '</div>';
 
-          window.runScrape = function() {
-            var btn    = document.getElementById('scrape-btn');
+          window.runScrape = function(keyword) {
+            var btn    = document.getElementById('btn-' + keyword);
             var status = document.getElementById('status');
             var results = document.getElementById('results');
             btn.disabled = true;
@@ -178,37 +183,38 @@ function doGet() {
             google.script.run
               .withSuccessHandler(function(data) {
                 btn.disabled = false;
-                btn.innerHTML = '&#128240; Scrape ABB News — DatacenterDynamics.com';
+                btn.innerHTML = '&#128240; Scrape ' + keyword + ' News — DatacenterDynamics.com';
                 btn.style.opacity = '1';
                 showResults(data);
               })
               .withFailureHandler(function(err) {
                 btn.disabled = false;
-                btn.innerHTML = '&#128240; Scrape ABB News — DatacenterDynamics.com';
+                btn.innerHTML = '&#128240; Scrape ' + keyword + ' News — DatacenterDynamics.com';
                 btn.style.opacity = '1';
                 status.style.color = '#ef4444';
                 status.textContent = 'Error: ' + (err.message || 'Scrape failed. Check GAS logs.');
               })
-              .scrapeABBNews();
+              .scrapeKeyword(keyword);
           };
 
           window.showResults = function(data) {
             var status  = document.getElementById('status');
             var results = document.getElementById('results');
             var articles = data.articles || [];
+            var keyword = data.keyword || '';
 
             if (articles.length === 0) {
               status.style.color = '#f59e0b';
-              status.textContent = 'No ABB articles found across ' + data.pagesChecked + ' page(s) — ' + data.timestamp;
+              status.textContent = 'No ' + keyword + ' articles found across ' + data.pagesChecked + ' page(s) — ' + data.timestamp;
               results.innerHTML =
                 '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:20px;text-align:center;color:#94a3b8;font-size:13px;">' +
-                  'No results. DCD may be blocking automated requests, or there are no recent ABB articles.' +
+                  'No results. DCD may be blocking automated requests, or there are no recent ' + keyword + ' articles.' +
                 '</div>';
               return;
             }
 
             status.style.color = '#10b981';
-            status.textContent = articles.length + ' ABB article(s) found across ' + data.pagesChecked + ' page(s) — ' + data.timestamp;
+            status.textContent = articles.length + ' ' + keyword + ' article(s) found across ' + data.pagesChecked + ' page(s) — ' + data.timestamp;
 
             var rows = articles.map(function(a, i) {
               return '<div style="padding:12px 16px;' + (i > 0 ? 'border-top:1px solid #e2e8f0;' : '') + '">' +
