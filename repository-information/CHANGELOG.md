@@ -7,19 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), with pr
 
 ## [Unreleased]
 
-## [v01.06r] — 2026-03-07 10:18:08 PM EST
+## [v01.06r] — 2026-03-07 10:46:41 PM EST
 
-### Added
-- Drive folder dashboard in Sinexcel_Research GAS app — research session management with Google Drive folder creation, file logging, status tracking, and system prompt generator
-
-#### `Sinexcel_Research.gs` — 01.04g
-##### Added
-- Drive folder dashboard — create research sessions, generate Google Drive folders, log all files in the spreadsheet
-- System prompt generator — produces a complete, pre-filled Claude Code prompt for deep market research on any target company
-- Research sessions table — shows all sessions with status, file count, and action buttons (Open Folder, Copy Prompt, View Files, Mark Complete)
-- File index tab — browse and open all generated research files filtered by company
-- GAS API endpoints — `saveFile` (Claude Code uploads content directly to Drive), `logFile`, `createFolder`, `updateStatus`, `getIndex`, `getFiles`
-- JSON body support in `doPost` — Claude Code can POST research file content as JSON for clean, size-safe uploads
+### Removed
+- Reverted Drive folder dashboard and Claude Code research system prompt from Sinexcel_Research GAS (01.04g → 01.03g)
 
 ## [v01.05r] — 2026-03-07 09:57:34 PM EST
 

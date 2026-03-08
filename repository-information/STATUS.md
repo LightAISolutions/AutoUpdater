@@ -18,7 +18,7 @@
 | Index | `googleAppsScripts/Index/index.gs` | `live-site-pages/index.html` | 01.00g | Active |
 | Testation7 | `googleAppsScripts/Testation7/testation7.gs` | `live-site-pages/testation7.html` | 01.00g | Active |
 | Testation8 | `googleAppsScripts/Testation8/testation8.gs` | `live-site-pages/testation8.html` | 01.00g | Active |
-| Sinexcel_Research | `googleAppsScripts/Sinexcel_Research/Sinexcel_Research.gs` | `live-site-pages/Sinexcel_Research.html` | 01.04g | Active |
+| Sinexcel_Research | `googleAppsScripts/Sinexcel_Research/Sinexcel_Research.gs` | `live-site-pages/Sinexcel_Research.html` | 01.03g | Active |
 
 
 ## Templates
