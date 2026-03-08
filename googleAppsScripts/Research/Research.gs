@@ -1,4 +1,4 @@
-var VERSION = "01.00g";
+var VERSION = "01.01g";
 var TITLE = "Database";
 var GITHUB_OWNER  = "LightAISolutions";
 var GITHUB_REPO   = "AutoUpdater";
@@ -13,6 +13,20 @@ var EMBED_PAGE_URL = "https://LightAISolutions.github.io/AutoUpdater/Research.ht
 // ══════════════
 // PROJECT START
 // ══════════════
+
+function getSheetTableData() {
+  if (!SPREADSHEET_ID || SPREADSHEET_ID === "YOUR_SPREADSHEET_ID") return { headers: [], rows: [] };
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) return { headers: [], rows: [] };
+  var data = sheet.getDataRange().getValues();
+  if (data.length === 0) return { headers: [], rows: [] };
+  var headers = data[0].map(function(h) { return h !== null && h !== undefined ? String(h) : ''; });
+  var rows = data.slice(1).map(function(row) {
+    return row.map(function(cell) { return cell !== null && cell !== undefined ? String(cell) : ''; });
+  });
+  return { headers: headers, rows: rows };
+}
 
 // ══════════════
 // PROJECT END
@@ -44,6 +58,15 @@ function doGet() {
         #live-b1 { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; text-align: center; }
         #sheet-iframe { width: 100%; height: 300px; border: 1px solid #ddd; border-radius: 6px; }
         #version { position: fixed; bottom: 8px; left: 8px; z-index: 9999; color: #1565c0; font-size: 12px; margin: 0; font-family: monospace; opacity: 0.8; }
+        #data-table-container { width:90%;max-width:800px;margin:12px auto 0;text-align:center; }
+        #data-table-container h3 { color:#333;margin:0 0 6px 0; }
+        .data-table { width:100%;border-collapse:collapse;font-size:13px;text-align:left; }
+        .data-table th { background:#2e7d32;color:#fff;padding:7px 10px;font-weight:600; }
+        .data-table td { padding:6px 10px;border-bottom:1px solid #e0e0e0; }
+        .data-table tr:last-child td { border-bottom:none; }
+        .data-table tr:nth-child(even) td { background:#f5f5f5; }
+        .data-table .no-data { color:#888;font-style:italic;text-align:center;padding:12px; }
+        #table-loading { color:#888;font-size:13px;margin-top:8px; }
       </style>
     </head>
     <body>
@@ -77,6 +100,11 @@ function doGet() {
         <iframe id="sheet-iframe" src="https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?rm=minimal" style="width:100%;height:300px;border:1px solid #ddd;border-radius:6px;"></iframe>
       </div>
       ` : ''}
+
+      <div id="data-table-container">
+        <h3>${SHEET_NAME} Data</h3>
+        <p id="table-loading">Loading table data...</p>
+      </div>
 
       <div style="margin-top:10px;">
         <button onclick="playReadySound()" style="background:#1565c0;color:white;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px;">🔊 Test Sound (Drive)</button>
@@ -185,6 +213,48 @@ function doGet() {
               .getAppData();
           }
         });
+
+        // ══════════════
+        // PROJECT START
+        // ══════════════
+
+        google.script.run
+          .withSuccessHandler(function(data) {
+            var container = document.getElementById('data-table-container');
+            var loading = document.getElementById('table-loading');
+            if (!container) return;
+            if (!data || !data.headers || data.headers.length === 0) {
+              if (loading) loading.textContent = 'No data found.';
+              return;
+            }
+            function escHtml(s) {
+              return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            }
+            var h = '<table class="data-table"><thead><tr>';
+            data.headers.forEach(function(col) { h += '<th>' + escHtml(col) + '</th>'; });
+            h += '</tr></thead><tbody>';
+            if (data.rows.length === 0) {
+              h += '<tr><td colspan="' + data.headers.length + '" class="no-data">No rows found.</td></tr>';
+            } else {
+              data.rows.forEach(function(row) {
+                h += '<tr>';
+                data.headers.forEach(function(_, i) { h += '<td>' + escHtml(row[i] !== undefined ? row[i] : '') + '</td>'; });
+                h += '</tr>';
+              });
+            }
+            h += '</tbody></table>';
+            if (loading) loading.remove();
+            container.insertAdjacentHTML('beforeend', h);
+          })
+          .withFailureHandler(function() {
+            var loading = document.getElementById('table-loading');
+            if (loading) loading.textContent = 'Could not load table data.';
+          })
+          .getSheetTableData();
+
+        // ══════════════
+        // PROJECT END
+        // ══════════════
 
       </script>
     </body>
@@ -423,4 +493,4 @@ function pullAndDeployFromGitHub() {
 // ══════════════
 // TEMPLATE END
 // ══════════════
-// Developed by: ShadowAISolutions
+// Developed by: LightAISolutions
