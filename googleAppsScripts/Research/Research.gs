@@ -1,4 +1,4 @@
-var VERSION = "01.01g";
+var VERSION = "01.02g";
 var TITLE = "Database";
 var GITHUB_OWNER  = "LightAISolutions";
 var GITHUB_REPO   = "AutoUpdater";
@@ -45,162 +45,10 @@ function doGet() {
       <meta http-equiv="Expires" content="0">
       <style>
         html, body { height: 100%; margin: 0; overflow: auto; }
-        body { font-family: Arial; display: flex; flex-direction: column; align-items: center; padding: 20px 0; box-sizing: border-box; }
-        button { background: #2e7d32; color: white; border: none; padding: 8px 20px;
-                 border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 10px; }
-        button:hover { background: #1b5e20; }
-        #versionCount { margin-top: 6px; font-size: 12px; color: #888; }
-        #main-content { position: relative; width: 90%; max-width: 600px; text-align: center; }
-        #sheet-container { margin-top: 10px; }
-        #sheet-container h3 { text-align: center; color: #333; margin: 0 0 4px 0; }
-        #token-info { font-size: 11px; color: #666; text-align: left; line-height: 1.6; white-space: nowrap; flex-shrink: 0; padding-top: 6px; }
-        #token-info div { margin-bottom: 2px; }
-        #live-b1 { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 4px; text-align: center; }
-        #sheet-iframe { width: 100%; height: 300px; border: 1px solid #ddd; border-radius: 6px; }
-        #version { position: fixed; bottom: 8px; left: 8px; z-index: 9999; color: #1565c0; font-size: 12px; margin: 0; font-family: monospace; opacity: 0.8; }
-        #data-table-container { width:90%;max-width:800px;margin:12px auto 0;text-align:center; }
-        #data-table-container h3 { color:#333;margin:0 0 6px 0; }
-        .data-table { width:100%;border-collapse:collapse;font-size:13px;text-align:left; }
-        .data-table th { background:#2e7d32;color:#fff;padding:7px 10px;font-weight:600; }
-        .data-table td { padding:6px 10px;border-bottom:1px solid #e0e0e0; }
-        .data-table tr:last-child td { border-bottom:none; }
-        .data-table tr:nth-child(even) td { background:#f5f5f5; }
-        .data-table .no-data { color:#888;font-style:italic;text-align:center;padding:12px; }
-        #table-loading { color:#888;font-size:13px;margin-top:8px; }
       </style>
     </head>
     <body>
-      <h2 id="version">v${VERSION}</h2>
-      <div style="display:flex; align-items:flex-start; justify-content:center; width:100%; gap:20px; padding:0 20px; box-sizing:border-box;">
-      <div style="text-align:center; flex:0 1 auto;">
-      <h1 id="title" style="font-size: 28px; margin: 0 0 4px 0;">${TITLE}</h1>
-      <div id="main-content">
-        <form id="redirect-form" method="GET" action="${EMBED_PAGE_URL}" target="_top" style="display:inline;">
-          <button id="reload-btn" type="submit" style="background:#2e7d32;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:14px;white-space:nowrap;">🔄 Reload Page</button>
-        </form>
-        ${SPREADSHEET_ID && SPREADSHEET_ID !== "YOUR_SPREADSHEET_ID" ? `<h3 style="color:#333; margin:6px 0 2px 0;">${SHEET_NAME}</h3>` : ''}
-        <div id="versionCount" style="margin-top:6px; font-size:12px; color:#888;"><span style="color:#666;">Versions:</span> <span id="versionCountValue">...</span></div>
-        ${SPREADSHEET_ID && SPREADSHEET_ID !== "YOUR_SPREADSHEET_ID" ? `<div style="margin-top:4px;"><span style="font-size:14px; color:#666;">B1 Content:</span> <span id="live-b1" style="font-size:20px; font-weight:bold; color:#333;">...</span></div>` : ''}
-      </div>
-      </div>
-      <div id="token-info">
-        <div style="font-weight:bold;color:#1b5e20;margin-bottom:3px;">Live Quotas</div>
-        <div>GitHub: <span id="qi-github">...</span></div>
-        <div>Mail: <span id="qi-mail">...</span></div>
-        <div style="border-top:1px solid #ccc;margin:4px 0;"></div>
-        <div style="font-weight:bold;color:#666;margin-bottom:3px;">Estimates</div>
-        <div>UrlFetch: <span id="qi-urlfetch">...</span></div>
-        <div>Sheets: <span id="qi-sheets">...</span></div>
-        <div>Exec: <span id="qi-exec">...</span></div>
-      </div>
-      </div>
-
-      ${SPREADSHEET_ID && SPREADSHEET_ID !== "YOUR_SPREADSHEET_ID" ? `
-      <div id="sheet-container" style="width:90%;max-width:600px;text-align:center;">
-        <iframe id="sheet-iframe" src="https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?rm=minimal" style="width:100%;height:300px;border:1px solid #ddd;border-radius:6px;"></iframe>
-      </div>
-      ` : ''}
-
-      <div id="data-table-container">
-        <h3>${SHEET_NAME} Data</h3>
-        <p id="table-loading">Loading table data...</p>
-      </div>
-
-      <div style="margin-top:10px;">
-        <button onclick="playReadySound()" style="background:#1565c0;color:white;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px;">🔊 Test Sound (Drive)</button>
-        <button onclick="playBeep()" style="background:#6a1b9a;color:white;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;">🔔 Test Beep (Old)</button>
-        <button onclick="testVibrate()" style="background:#2e7d32;color:white;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px;margin-left:6px;">📳 Test Vibrate</button>
-      </div>
-
       <script>
-        var _soundDataUrl = null;
-        google.script.run
-          .withSuccessHandler(function(dataUrl) { _soundDataUrl = dataUrl; })
-          .withFailureHandler(function() {})
-          .getSoundBase64();
-
-        function playBeep() {
-          try {
-            var ctx = new (window.AudioContext || window.webkitAudioContext)();
-            var osc = ctx.createOscillator();
-            var gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = 880;
-            gain.gain.value = 0.3;
-            osc.start();
-            osc.stop(ctx.currentTime + 0.15);
-          } catch(e) {}
-        }
-
-        function playReadySound() {
-          if (!_soundDataUrl) return;
-          try {
-            var audio = new Audio(_soundDataUrl);
-            audio.play().catch(function() {});
-          } catch(e) {}
-        }
-
-        function testVibrate() {
-          if (navigator.vibrate) {
-            navigator.vibrate(200);
-          }
-        }
-
-        function applyData(data) {
-          for (var key in data) {
-            if (key === 'versionCount') {
-              var vcEl = document.getElementById('versionCountValue');
-              if (vcEl) {
-                var vcText = data[key].replace(/ versions$/i, '');
-                vcEl.textContent = vcText;
-                if (data[key].indexOf('LIMIT') !== -1) {
-                  vcEl.style.color = '#d32f2f';
-                  vcEl.style.fontWeight = 'bold';
-                }
-              }
-              continue;
-            }
-            var el = document.getElementById(key);
-            if (el) el.textContent = data[key];
-          }
-        }
-
-        google.script.run
-          .withSuccessHandler(function(data) {
-            applyData(data);
-          })
-          .getAppData();
-
-        function pollB1FromCache() {
-          google.script.run
-            .withSuccessHandler(function(val) {
-              var el = document.getElementById('live-b1');
-              if (el) el.textContent = val;
-            })
-            .readB1FromCacheOrSheet();
-        }
-        if (document.getElementById('live-b1')) {
-          pollB1FromCache();
-          setInterval(pollB1FromCache, 15000);
-        }
-
-        function pollQuotaAndLimits() {
-          google.script.run
-            .withSuccessHandler(function(t) {
-              var ids = {github:'qi-github', mail:'qi-mail', urlFetch:'qi-urlfetch', spreadsheet:'qi-sheets', execTime:'qi-exec'};
-              for (var k in ids) {
-                var span = document.getElementById(ids[k]);
-                if (span && t[k]) span.textContent = t[k];
-              }
-            })
-            .fetchGitHubQuotaAndLimits();
-        }
-        if (document.getElementById('token-info')) {
-          pollQuotaAndLimits();
-          setInterval(pollQuotaAndLimits, 60000);
-        }
-
         window.addEventListener('message', function(e) {
           if (e.data && e.data.type === 'gas-version-check') {
             google.script.run
@@ -218,45 +66,11 @@ function doGet() {
         // PROJECT START
         // ══════════════
 
-        google.script.run
-          .withSuccessHandler(function(data) {
-            var container = document.getElementById('data-table-container');
-            var loading = document.getElementById('table-loading');
-            if (!container) return;
-            if (!data || !data.headers || data.headers.length === 0) {
-              if (loading) loading.textContent = 'No data found.';
-              return;
-            }
-            function escHtml(s) {
-              return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            }
-            var h = '<table class="data-table"><thead><tr>';
-            data.headers.forEach(function(col) { h += '<th>' + escHtml(col) + '</th>'; });
-            h += '</tr></thead><tbody>';
-            if (data.rows.length === 0) {
-              h += '<tr><td colspan="' + data.headers.length + '" class="no-data">No rows found.</td></tr>';
-            } else {
-              data.rows.forEach(function(row) {
-                h += '<tr>';
-                data.headers.forEach(function(_, i) { h += '<td>' + escHtml(row[i] !== undefined ? row[i] : '') + '</td>'; });
-                h += '</tr>';
-              });
-            }
-            h += '</tbody></table>';
-            if (loading) loading.remove();
-            container.insertAdjacentHTML('beforeend', h);
-          })
-          .withFailureHandler(function() {
-            var loading = document.getElementById('table-loading');
-            if (loading) loading.textContent = 'Could not load table data.';
-          })
-          .getSheetTableData();
-
         // ══════════════
         // PROJECT END
         // ══════════════
 
-      </script>
+      <\/script>
     </body>
     </html>
   `;
