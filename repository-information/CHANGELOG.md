@@ -3,9 +3,18 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), with project-specific versioning (`w` = website, `g` = Google Apps Script, `r` = repository). Older sections are rotated to [CHANGELOG-archive.md](CHANGELOG-archive.md) when this file exceeds 100 version sections.
 
-`Sections: 6/100`
+`Sections: 7/100`
 
 ## [Unreleased]
+
+## [v01.07r] — 2026-03-07 10:56:54 PM EST
+
+### Added
+- ABB news scraper button in Sinexcel_Research GAS app — scrapes DatacenterDynamics.com and displays all ABB-related articles with links
+
+#### `Sinexcel_Research.gs` — 01.04g
+##### Added
+- ABB news scraper button — fetches DatacenterDynamics.com news pages and surfaces all ABB-related articles with clickable links
 
 ## [v01.06r] — 2026-03-07 10:46:41 PM EST
 

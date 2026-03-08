@@ -3,9 +3,14 @@
 All notable user-facing changes to this script are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Older sections are rotated to [Sinexcel_Researchgs.changelog-archive.md](Sinexcel_Researchgs.changelog-archive.md) when this file exceeds 50 version sections.
 
-`Sections: 3/50`
+`Sections: 4/50`
 
 ## [Unreleased]
+
+## [01.04g] — 2026-03-07 10:56:54 PM EST — v01.07r
+
+### Added
+- ABB news scraper button — fetches DatacenterDynamics.com news pages and surfaces all ABB-related articles with clickable links
 
 ## [01.03g] — 2026-03-07 09:57:34 PM EST — v01.05r
 
