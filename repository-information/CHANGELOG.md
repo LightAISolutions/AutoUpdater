@@ -3,9 +3,18 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), with project-specific versioning (`w` = website, `g` = Google Apps Script, `r` = repository). Older sections are rotated to [CHANGELOG-archive.md](CHANGELOG-archive.md) when this file exceeds 100 version sections.
 
-`Sections: 4/100`
+`Sections: 5/100`
 
 ## [Unreleased]
+
+## [v01.05r] — 2026-03-07 09:57:34 PM EST
+
+### Changed
+- Renamed Research GAS project to Sinexcel_Research — renamed all associated files, directories, changelogs, version files, and updated all internal references
+
+#### `Sinexcel_Research.gs` — 01.03g
+##### Changed
+- Project renamed from Research to Sinexcel_Research — updated FILE_PATH and EMBED_PAGE_URL internal variables
 
 ## [v01.04r] — 2026-03-07 09:35:58 PM EST
 

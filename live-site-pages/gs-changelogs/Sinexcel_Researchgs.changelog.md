@@ -1,11 +1,16 @@
 # Changelog — Database (Google Apps Script)
 
 All notable user-facing changes to this script are documented here.
-Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Older sections are rotated to [Researchgs.changelog-archive.md](Researchgs.changelog-archive.md) when this file exceeds 50 version sections.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Older sections are rotated to [Sinexcel_Researchgs.changelog-archive.md](Sinexcel_Researchgs.changelog-archive.md) when this file exceeds 50 version sections.
 
-`Sections: 2/50`
+`Sections: 3/50`
 
 ## [Unreleased]
+
+## [01.03g] — 2026-03-07 09:57:34 PM EST — v01.05r
+
+### Changed
+- Project renamed from Research to Sinexcel_Research
 
 ## [01.02g] — 2026-03-07 09:35:58 PM EST — v01.04r
 

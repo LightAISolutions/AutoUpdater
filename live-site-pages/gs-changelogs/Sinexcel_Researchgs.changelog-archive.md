@@ -1,6 +1,6 @@
 # Changelog Archive — Database (Google Apps Script)
 
-Older version sections rotated from [Researchgs.changelog.md](Researchgs.changelog.md). Full granularity preserved — entries are moved here verbatim when the main changelog exceeds 50 version sections.
+Older version sections rotated from [Sinexcel_Researchgs.changelog.md](Sinexcel_Researchgs.changelog.md). Full granularity preserved — entries are moved here verbatim when the main changelog exceeds 50 version sections.
 
 ## Rotation Logic
 

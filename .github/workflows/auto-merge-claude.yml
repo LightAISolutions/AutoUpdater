@@ -348,11 +348,11 @@ jobs:
             -d "action=deploy" \
             --max-time 120 || true
 
-      - name: Deploy Research
+      - name: Deploy Sinexcel_Research
         if: steps.guard.outputs.skip != 'true'
         run: |
           PRE=${{ steps.merge.outputs.pre_merge_sha }}
-          git diff --name-only "$PRE" HEAD | grep -q "googleAppsScripts/Research/Research.gs" && \
+          git diff --name-only "$PRE" HEAD | grep -q "googleAppsScripts/Sinexcel_Research/Sinexcel_Research.gs" && \
           curl -L -X POST \
             "https://script.google.com/macros/s/AKfycbzla54SKYVqPZLUlymdW8vsmGpe46jO7eACnWEU86BLlav_gMHQVnzkhotsSIVbyp-p/exec" \
             -d "action=deploy" \

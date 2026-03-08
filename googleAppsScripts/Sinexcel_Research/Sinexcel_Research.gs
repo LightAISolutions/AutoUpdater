@@ -1,14 +1,14 @@
-var VERSION = "01.02g";
+var VERSION = "01.03g";
 var TITLE = "Database";
 var GITHUB_OWNER  = "LightAISolutions";
 var GITHUB_REPO   = "AutoUpdater";
 var GITHUB_BRANCH = "main";
-var FILE_PATH     = "googleAppsScripts/Research/Research.gs";
+var FILE_PATH     = "googleAppsScripts/Sinexcel_Research/Sinexcel_Research.gs";
 var DEPLOYMENT_ID = "AKfycbzla54SKYVqPZLUlymdW8vsmGpe46jO7eACnWEU86BLlav_gMHQVnzkhotsSIVbyp-p";
 var SPREADSHEET_ID = "1dE9Lwui0IBJMApl-O9O7VI6mY3S6a5C1CpUFyReaURk";
 var SHEET_NAME     = "Summary";
 var SOUND_FILE_ID = "1bzVp6wpTHdJ4BRX8gbtDN73soWpmq1kN";
-var EMBED_PAGE_URL = "https://LightAISolutions.github.io/AutoUpdater/Research.html";
+var EMBED_PAGE_URL = "https://LightAISolutions.github.io/AutoUpdater/Sinexcel_Research.html";
 
 // ══════════════
 // PROJECT START

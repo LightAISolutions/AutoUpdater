@@ -4,27 +4,27 @@ Claude writes to this file when the developer says **"Remember Session"** — ca
 
 ## Latest Session
 
-**Date:** 2026-03-07 03:20:08 PM EST
-**Reconstructed:** Auto-recovered from CHANGELOG (original session did not save context — stale content inherited from template repo ShadowAISolutions/htmltemplateautoupdate)
-**Repo version:** v01.00r
+**Date:** 2026-03-07 09:57:34 PM EST
+**Reconstructed:** Auto-recovered from CHANGELOG (sessions v01.01r–v01.04r did not save context)
+**Repo version:** v01.05r
 
 ### What was done
-- Fresh fork of ShadowAISolutions/htmltemplateautoupdate initialized as LightAISolutions/AutoUpdater
-- Ran init-repo.sh: replaced ShadowAISolutions → LightAISolutions and htmltemplateautoupdate → AutoUpdater across 22 files, updated CLAUDE.md Template Variables, restructured README, generated QR code
-- Committed initialization changes and triggered first GitHub Pages deployment via "Initialize deployment" commit
+- v01.01r: Set up Research GAS project (embedding page, .gs, config, version files, changelogs)
+- v01.02r: Added GAS data table on Research page — fetches Summary sheet rows as HTML table
+- v01.03r: Updated time estimation heuristics in chat-bookends rules
+- v01.04r: Removed all visible content from Research GAS app (blank canvas)
+- v01.05r: Renamed Research GAS project to Sinexcel_Research — all files, directories, changelogs, version files, and internal references updated
 
 ### Where we left off
-All changes committed and merged to main. First deployment to GitHub Pages triggered. Repo is live at https://LightAISolutions.github.io/AutoUpdater/
+All changes committed and merged to main.
 
 ### Key decisions made
-- Fork initialized from ShadowAISolutions/htmltemplateautoupdate template
-- DEVELOPER_NAME = LightAISolutions (matches org name, no override)
+- Research project renamed to Sinexcel_Research per user request
 
 ### Active context
-- Branch: `claude/initialize-project-1FQDS`
-- Repo version: v01.00r
-- Page versions: index v01.00w (initial), gas-project-creator v01.00w (initial)
-- GAS versions: index 01.00g (initial), gas-project-creator 01.00g (initial)
+- Branch: `claude/rename-research-project-DQQoH`
+- Repo version: v01.05r
+- GAS versions: Sinexcel_Research 01.03g
 - Active reminders: none
 - TODO items: Get mayo, Get lettuce, Get sliced turkey, Get mustard, Get pickles
 - `TEMPLATE_DEPLOY` = `Off`, `CHAT_BOOKENDS` = `On`, `END_OF_RESPONSE_BLOCK` = `On`

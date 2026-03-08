@@ -42,13 +42,13 @@ graph TB
             GASTPL_CODE["gas-code-templates/\ngas-project-creator-code.js.txt"]
             TSTA7_PAGE["testation7.html"]
             TSTT_PAGE["testation8.html"]
-            RSRC_PAGE["Research.html"]
-            RSRC_VERTXT["Researchhtml.version.txt"]
-            RSRC_CL["Researchhtml.changelog.md"]
-            RSRC_CLARCH["Researchhtml.changelog-archive.md"]
-            RSRC_GSCL["Researchgs.changelog.md"]
-            RSRC_GSCLARCH["Researchgs.changelog-archive.md"]
-            RSRC_GSVER["Researchgs.version.txt"]
+            RSRC_PAGE["Sinexcel_Research.html"]
+            RSRC_VERTXT["Sinexcel_Researchhtml.version.txt"]
+            RSRC_CL["Sinexcel_Researchhtml.changelog.md"]
+            RSRC_CLARCH["Sinexcel_Researchhtml.changelog-archive.md"]
+            RSRC_GSCL["Sinexcel_Researchgs.changelog.md"]
+            RSRC_GSCLARCH["Sinexcel_Researchgs.changelog-archive.md"]
+            RSRC_GSVER["Sinexcel_Researchgs.version.txt"]
             SND1["sounds/Website_Ready_Voice_1.mp3"]
             SND2["sounds/Code_Ready_Voice_1.mp3"]
 
@@ -107,8 +107,8 @@ graph TB
             GAS_TSTA7_CFG["testation7.config.json\n(source of truth for\nTITLE, DEPLOYMENT_ID,\nSPREADSHEET_ID, etc.)"]
             GAS_TSTT["googleAppsScripts/Testation8/\ntestation8.gs"]
             GAS_TSTT_CFG["testation8.config.json\n(source of truth for\nTITLE, DEPLOYMENT_ID,\nSPREADSHEET_ID, etc.)"]
-            GAS_RSRC["googleAppsScripts/Research/\nResearch.gs"]
-            GAS_RSRC_CFG["Research.config.json\n(source of truth for\nTITLE, DEPLOYMENT_ID,\nSPREADSHEET_ID, etc.)"]
+            GAS_RSRC["googleAppsScripts/Sinexcel_Research/\nSinexcel_Research.gs"]
+            GAS_RSRC_CFG["Sinexcel_Research.config.json\n(source of truth for\nTITLE, DEPLOYMENT_ID,\nSPREADSHEET_ID, etc.)"]
         end
 
         subgraph "GAS Self-Update Loop"
@@ -165,7 +165,7 @@ graph TB
     GAS_INDEX -.->|"source of truth\nfor GAS app\n(index.gs)"| GAS_PULL
     GAS_TSTA7 -.->|"source of truth\nfor GAS app\n(testation7.gs)"| GAS_PULL
     GAS_TSTT -.->|"source of truth\nfor GAS app\n(testation8.gs)"| GAS_PULL
-    GAS_RSRC -.->|"source of truth\nfor GAS app\n(Research.gs)"| GAS_PULL
+    GAS_RSRC -.->|"source of truth\nfor GAS app\n(Sinexcel_Research.gs)"| GAS_PULL
     GAS_DEPLOY -.->|"curl POST\naction=deploy"| GAS_APP
     SHA_FILE -.->|"read by"| SHA_CHECK
     UPDATE_SHA -.->|"writes"| SHA_FILE
